@@ -54,6 +54,10 @@ def binning_parangs(init_parangs, sizebin=20):
 
 def quick_heat_map(datacube, range_color=[0, 500], title="",coords_3D=None, reverse_x_ra = False):
 
+
+    # line to solve error : numpy array is not native-endianness
+    datacube = datacube.astype(datacube.dtype.newbyteorder("="))
+
     if len(datacube.shape) == 3:
 
 
