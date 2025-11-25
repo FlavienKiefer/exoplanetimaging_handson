@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import exoplanet as xo
 import pymc as pm
 import pymc_ext as pmx
-import aesara_theano_fallback.tensor as tt
+import pytensor.tensor as tt
 from celerite2.theano import terms, GaussianProcess
 from astropy import units as units, constants as const
 import matplotlib as mpl
