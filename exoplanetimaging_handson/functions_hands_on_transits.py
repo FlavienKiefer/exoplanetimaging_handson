@@ -10,7 +10,7 @@ import exoplanet as xo
 import pymc as pm
 import pymc_ext as pmx
 import pytensor.tensor as tt
-from celerite2.theano import terms, GaussianProcess
+from celerite2.pymc import terms, GaussianProcess
 from astropy import units as units, constants as const
 import matplotlib as mpl
 import platform
