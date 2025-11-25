@@ -31,12 +31,12 @@ def build_model(x,y,yerr,u_s,t0s,periods,rps,a_ps, texp,b_ps=0.62, P_rot=200, ma
     with pm.Model() as model:
 
         # Shared parameters
-        mean = pm.Normal("mean", mu=0.0, sd=1.0)
+        mean = pm.Normal("mean", mu=0.0, sigma=1.0)
 
         # Stellar parameters.  These are usually determined from spectroscopy
         # and/or isochrone fits.
-        logg_star = pm.Normal("logg_star", mu=4.45, sd=0.05)
-        r_star = pm.Normal("r_star", mu=1.004, sd=0.018)
+        logg_star = pm.Normal("logg_star", mu=4.45, sigma=0.05)
+        r_star = pm.Normal("r_star", mu=1.004, sigma=0.018)
 
         # Limb-darkening: adopt Kipping 2013.
         #u_star = xo.distributions.QuadLimbDark("u_star", testval=u_s)
@@ -47,10 +47,10 @@ def build_model(x,y,yerr,u_s,t0s,periods,rps,a_ps, texp,b_ps=0.62, P_rot=200, ma
         a = pm.Uniform("a", lower=a_ps-1,upper=a_ps+1, shape=nb_planet)
         b = pm.Uniform("b", lower=b_ps-0.1,upper=b_ps+0.1, shape=nb_planet)
        # b = xo.distributions.ImpactParameter("b", ror=rors, shape=nb_planet, testval=b_ps)
-        t0 = pm.Normal("t0", mu=t0s, sd=0.005, shape=nb_planet)
-        logP = pm.Normal("logP", mu=np.log(periods), sd=0.05, shape=nb_planet)
+        t0 = pm.Normal("t0", mu=t0s, sigma=0.005, shape=nb_planet)
+        logP = pm.Normal("logP", mu=np.log(periods), sigma=0.05, shape=nb_planet)
         period = pm.Deterministic("period", pm.math.exp(logP))
-        log_depth = pm.Normal("log_depth", mu=np.log(rps**2), sd=1.5,shape=nb_planet)
+        log_depth = pm.Normal("log_depth", mu=np.log(rps**2), sigma=1.5,shape=nb_planet)
         depth = pm.Deterministic("depth", tt.exp(log_depth))
         ror = pm.Deterministic(
             "ror",
@@ -82,17 +82,17 @@ def build_model(x,y,yerr,u_s,t0s,periods,rps,a_ps, texp,b_ps=0.62, P_rot=200, ma
         # https://gallery.exoplanet.codes/en/latest/tutorials/stellar-variability/
 
         # A jitter term describing excess white noise
-        log_jitter = pm.Normal("log_jitter", mu=np.log(np.mean(yerr)), sd=2)
+        log_jitter = pm.Normal("log_jitter", mu=np.log(np.mean(yerr)), sigma=2)
 
         # The parameters of the RotationTerm kernel
         sigma_rot = pm.InverseGamma(
             "sigma_rot", **pmx.estimate_inverse_gamma_parameters(1, 5)
         )
         # Rotation period is 200 days, from Lomb Scargle
-        log_prot = pm.Normal("log_prot", mu=np.log(P_rot), sd=0.02)
+        log_prot = pm.Normal("log_prot", mu=np.log(P_rot), sigma=0.02)
         prot = pm.Deterministic("prot", tt.exp(log_prot))
-        log_Q0 = pm.Normal("log_Q0", mu=0, sd=2)
-        log_dQ = pm.Normal("log_dQ", mu=0, sd=2)
+        log_Q0 = pm.Normal("log_Q0", mu=0, sigma=2)
+        log_dQ = pm.Normal("log_dQ", mu=0, sigma=2)
         f = pm.Uniform("f", lower=0.01, upper=1)
 
         # Set up the Gaussian Process model. See
