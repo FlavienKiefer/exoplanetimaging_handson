@@ -85,9 +85,17 @@ def build_model(x,y,yerr,u_s,t0s,periods,rps,a_ps, texp,b_ps=0.62, P_rot=200, ma
         log_jitter = pm.Normal("log_jitter", mu=np.log(np.mean(yerr)), sigma=2)
 
         # The parameters of the RotationTerm kernel
-        sigma_rot = pm.InverseGamma(
-            "sigma_rot", **pmx.estimate_inverse_gamma_parameters(1, 5)
-        )
+        # sigma_rot = pm.InverseGamma(
+        #     "sigma_rot", **pmx.estimate_inverse_gamma_parameters(1, 5)
+        # )
+        # PyMC 5-compatible version
+        # Compute alpha, beta manually for mean=1, std=5
+        mean_val = 1
+        std_val = 5
+        alpha = (mean_val/std_val)**2 + 2
+        beta = mean_val * (alpha - 1)
+        sigma_rot = pm.InverseGamma("sigma_rot", alpha=alpha, beta=beta)
+        
         # Rotation period is 200 days, from Lomb Scargle
         log_prot = pm.Normal("log_prot", mu=np.log(P_rot), sigma=0.02)
         prot = pm.Deterministic("prot", tt.exp(log_prot))
