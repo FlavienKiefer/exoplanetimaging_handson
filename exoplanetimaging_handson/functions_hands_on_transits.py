@@ -7,8 +7,8 @@ import corner
 import numpy as np
 import matplotlib.pyplot as plt
 import exoplanet as xo
-import pymc3 as pm
-import pymc3_ext as pmx
+import pymc as pm
+import pymc_ext as pmx
 import aesara_theano_fallback.tensor as tt
 from celerite2.theano import terms, GaussianProcess
 from astropy import units as units, constants as const
