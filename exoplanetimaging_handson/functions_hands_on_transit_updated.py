@@ -83,7 +83,7 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
 
         # Optimize MAP
         if start is None:
-            start = model.test_point
+            start = model.initial_point()
 
         map_soln = start
         map_soln = pmx.optimize(start=map_soln, vars=[sigma_rot, f, prot, log_Q0, log_dQ])
