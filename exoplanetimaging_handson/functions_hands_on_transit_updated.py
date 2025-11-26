@@ -96,8 +96,8 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
             rho=tt.exp(log_rho_gp),
             Q=1 / np.sqrt(2),
         )
-        gp = GaussianProcess(kernel, t=x[mask], yerr=tt.exp(log_sigma_lc))
-        gp.marginal("gp", observed=resid)
+        gp = GaussianProcess(kernel, t=x[mask], yerr=tt.exp(log_sigma_lc), mean=transit_model)
+        gp.marginal("gp", observed=y[mask])
         
         # # GP with transit as mean
         # kernel = terms.RotationTerm(sigma=sigma_rot, period=prot, Q0=tt.exp(log_Q0), dQ=tt.exp(log_dQ), f=f)
