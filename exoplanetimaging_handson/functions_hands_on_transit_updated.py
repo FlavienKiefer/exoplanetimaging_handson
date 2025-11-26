@@ -62,7 +62,10 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         # ecc = pm.Deterministic("ecc", tt.sum(ecs**2))
         omega = pm.Uniform("omega", lower=0., upper=360., shape=nb_planet)
         ecc = xo.distributions.eccentricity.kipping13("ecc")
-        # print(xo.eccentricity.kipping13("ecc", "omega"))
+        # convert to unit disk
+        e_c = tt.sqrt(ecc) * tt.cos(omega)
+        e_s = tt.sqrt(ecc) * tt.sin(omega)
+        ecs = tt.stack([e_c, e_s])
 
         # Orbit and transit
         orbit = xo.orbits.KeplerianOrbit(
