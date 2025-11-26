@@ -132,7 +132,7 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         )
         map_soln = pmx.optimize(start=map_soln, vars=[log_depth])
         map_soln = pmx.optimize(start=map_soln, vars=[b])
-        map_soln = pmx.optimize(start=map_soln, vars=[log_period, t0])
+        map_soln = pmx.optimize(start=map_soln, vars=[logP, t0])
         map_soln = pmx.optimize(start=map_soln, vars=[u_star])
         map_soln = pmx.optimize(start=map_soln, vars=[log_depth])
         map_soln = pmx.optimize(start=map_soln, vars=[b])
