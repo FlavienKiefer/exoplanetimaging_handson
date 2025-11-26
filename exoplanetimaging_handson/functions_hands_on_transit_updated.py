@@ -266,6 +266,7 @@ def run_sampling(model,map_estimate,tune=200,draws=100,cores=2):
                 "b",
                 "r_pl",
                 "period",
+                "depth",
                 "log_sigma_lc",
                 "log_rho_gp",
                 "log_sigma_gp",
