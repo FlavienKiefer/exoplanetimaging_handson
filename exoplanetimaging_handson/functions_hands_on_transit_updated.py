@@ -159,17 +159,17 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         )
         map_soln = pmx.optimize(start=map_soln)
 
-        extras = dict(
-            zip(
-                ["transit_model", "gp_pred"],
-                pmx.eval_in_model([transit_model, gp.predict(resid)], map_soln),
-            )
-        )
+        # extras = dict(
+        #     zip(
+        #         ["transit_model", "gp_pred"],
+        #         pmx.eval_in_model([transit_model, gp.predict(resid)], map_soln),
+        #     )
+        # )
 
         
         # map_soln = pmx.optimize(start=map_soln, vars=[t0, a, b, period, mean, r_pl,sigma_rot, f, prot, log_Q0, log_dQ])
 
-    return model, map_soln, extras
+    return model, map_soln #, extras
 
 
 
