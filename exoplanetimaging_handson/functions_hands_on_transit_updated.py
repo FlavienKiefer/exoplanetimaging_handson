@@ -31,6 +31,8 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
     rps = np.array([rps])
     a_ps = np.array([a_ps])
 
+    phase_lc = np.linspace(-0.3, 0.3, 100)
+
     if mask is None:
         mask = np.ones(len(x), dtype=bool)
 
@@ -65,24 +67,54 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         # Jitter
         log_jitter = pm.Normal("log_jitter", mu=np.log(np.mean(yerr)), sigma=2)
 
-        # Rotation GP parameters
-        mean_val, std_val = 1, 5
-        alpha = (mean_val / std_val)**2 + 2
-        beta = mean_val * (alpha - 1)
-        sigma_rot = pm.InverseGamma("sigma_rot", alpha=alpha, beta=beta)
-        log_prot = pm.Normal("log_prot", mu=np.log(P_rot), sigma=0.02)
-        prot = pm.Deterministic("prot", tt.exp(log_prot))
-        log_Q0 = pm.Normal("log_Q0", mu=0, sigma=2)
-        log_dQ = pm.Normal("log_dQ", mu=0, sigma=2)
-        f = pm.Uniform("f", lower=0.01, upper=1)
+        # # Rotation GP parameters
+        # mean_val, std_val = 1, 5
+        # alpha = (mean_val / std_val)**2 + 2
+        # beta = mean_val * (alpha - 1)
+        # sigma_rot = pm.InverseGamma("sigma_rot", alpha=alpha, beta=beta)
+        # log_prot = pm.Normal("log_prot", mu=np.log(P_rot), sigma=0.02)
+        # prot = pm.Deterministic("prot", tt.exp(log_prot))
+        # log_Q0 = pm.Normal("log_Q0", mu=0, sigma=2)
+        # log_dQ = pm.Normal("log_dQ", mu=0, sigma=2)
+        # f = pm.Uniform("f", lower=0.01, upper=1)
 
-        # GP with transit as mean
-        kernel = terms.RotationTerm(sigma=sigma_rot, period=prot, Q0=tt.exp(log_Q0), dQ=tt.exp(log_dQ), f=f)
-        gp = GaussianProcess(kernel, t=x[mask], diag=yerr[mask] ** 2, mean=transit_model, quiet=True)
-        gp.marginal("transit_obs", observed=y[mask])
+        # Transit jitter & GP parameters
+        log_sigma_lc = pm.Normal(
+            "log_sigma_lc", mu=np.log(np.std(y[mask])), sigma=10
+        )
+        log_rho_gp = pm.Normal("log_rho_gp", mu=0, sd=10)
+        log_sigma_gp = pm.Normal(
+            "log_sigma_gp", mu=np.log(np.std(y[mask])), sigma=10
+        )
+
+        # Compute the model residuals
+        resid = y[mask] - transit_model
+
+        # GP model for the light curve
+        kernel = terms.SHOTerm(
+            sigma=tt.exp(log_sigma_gp),
+            rho=tt.exp(log_rho_gp),
+            Q=1 / np.sqrt(2),
+        )
+        gp = GaussianProcess(kernel, t=x[mask], yerr=tt.exp(log_sigma_lc))
+        gp.marginal("gp", observed=resid)
+        
+        # # GP with transit as mean
+        # kernel = terms.RotationTerm(sigma=sigma_rot, period=prot, Q0=tt.exp(log_Q0), dQ=tt.exp(log_dQ), f=f)
+        # gp = GaussianProcess(kernel, t=x[mask], diag=yerr[mask] ** 2, mean=transit_model, quiet=True)
+        # gp.marginal("transit_obs", observed=y[mask])
 
         # Compute the GP model prediction for plotting purposes
-        pm.Deterministic("gp_pred", gp.predict(y[mask] - transit_model))
+        pm.Deterministic("gp_pred", gp.predict(resid))
+
+        # Compute and save the phased light curve models
+        pm.Deterministic(
+            "lc_pred",
+            1e3
+            * star.get_light_curve(
+                orbit=orbit, r=r_pl, t=t0 + phase_lc, texp=texp
+            )[..., 0],
+        )
 
         # Optimize MAP
         if start is None:
@@ -111,10 +143,17 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         )
         map_soln = pmx.optimize(start=map_soln)
 
+        extras = dict(
+            zip(
+                ["light_curves", "gp_pred"],
+                pmx.eval_in_model([light_curves, gp.predict(resid)], map_soln),
+            )
+        )
+
         
         # map_soln = pmx.optimize(start=map_soln, vars=[t0, a, b, period, mean, r_pl,sigma_rot, f, prot, log_Q0, log_dQ])
 
-    return model, map_soln
+    return model, map_soln, extras
 
 
 
