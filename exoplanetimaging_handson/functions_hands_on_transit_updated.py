@@ -120,7 +120,7 @@ def plot_light_curve(x, y, yerr, soln, mask=None):
         label="data",
         zorder=4,
     )
-    gp_mod = soln["gp_pred"] + soln["mean"]
+    gp_mod = soln["gp_pred"] + 1 #+ soln["mean"]
     ax.plot(
         x[mask], gp_mod+1, color="C2", label="model without transit", zorder=5, lw=0.5
     )
