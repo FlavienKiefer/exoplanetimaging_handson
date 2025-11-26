@@ -78,8 +78,8 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
 
         # GP with transit as mean
         kernel = terms.RotationTerm(sigma=sigma_rot, period=prot, Q0=tt.exp(log_Q0), dQ=tt.exp(log_dQ), f=f)
-        gp = GaussianProcess(kernel, t=x[mask], diag=yerr[mask] ** 2, mean=transit_model, quiet=True)
-        gp.marginal("transit_obs", observed=y[mask])
+        gp = GaussianProcess(kernel, t=x[mask], diag=yerr[mask] ** 2, mean=transit_model*0, quiet=True)
+        gp.marginal("transit_obs", observed=y[mask]-transit_model)
 
         # Compute the GP model prediction for plotting purposes
         pm.Deterministic("gp_pred", gp.predict(y[mask] - transit_model))
@@ -124,7 +124,7 @@ def plot_light_curve(x, y, yerr, soln, mask=None):
     ax.plot(
         x[mask], gp_mod+1, color="C2", label="model without transit", zorder=5, lw=0.5
     )
-    ax.legend(fontsize=10)
+    # ax.legend(fontsize=10)
     ax.set_ylabel("$f$")
 
     ax = axes[1]
@@ -137,7 +137,7 @@ def plot_light_curve(x, y, yerr, soln, mask=None):
             label="planet {0} [model under]".format(l),
             zorder=5,
         )
-    ax.legend(fontsize=10, loc=3)
+    # ax.legend(fontsize=10, loc=3)
     ax.set_ylabel("$f_\mathrm{dtr}$")
 
     #ax = axes[2]
@@ -233,7 +233,7 @@ def plot_best_fit(x, y, yerr, soln, mask=None):
     ax.plot(
         x[mask], gp_mod+1,'--', color="C2", label="without transit", zorder=5, lw=1
     )
-    ax.legend(fontsize=10)
+    # ax.legend(fontsize=10)
     ax.set_ylabel("Relative flux")
     ax.set_xlabel("Time to mid-transit (days)")
 
