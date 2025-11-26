@@ -61,7 +61,8 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         # ecs = pmx.UnitDisk("ecs", testval=np.array([0.01, 0.0]))
         # ecc = pm.Deterministic("ecc", tt.sum(ecs**2))
         # omega = pm.Deterministic("omega", tt.arctan2(ecs[1], ecs[0]))
-        ecc, omega = xo.eccentricity.kipping13("ecc", "omega")
+        ecs = xo.eccentricity.kipping13("ecc", "omega")
+        print(xo.eccentricity.kipping13("ecc", "omega"))
 
         # Orbit and transit
         orbit = xo.orbits.KeplerianOrbit(
