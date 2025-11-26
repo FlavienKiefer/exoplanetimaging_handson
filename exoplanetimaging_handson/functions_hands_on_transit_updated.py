@@ -249,7 +249,7 @@ def run_sampling(model,map_estimate,tune=200,draws=100,cores=2):
                 draws=draws,
                 start=map_estimate,
                 # Parallel sampling runs poorly or crashes on macos
-                cores=1 if platform.system() == "Darwin" else 2,
+                cores=1 if platform.system() == "Darwin" else cores,
                 chains=2,
                 target_accept=0.95,
                 return_inferencedata=True,
