@@ -89,6 +89,9 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
             start = model.initial_point()
 
         map_soln = start
+        map_soln = pmx.optimize(start=map_soln, vars=[t0, a, b, period, mean, r_pl])
+        map_soln = pmx.optimize(start=map_soln, vars=[sigma_rot, f, prot, log_Q0, log_dQ])
+        map_soln = pmx.optimize(start=map_soln, vars=[t0, a, b, period, mean, r_pl])
         map_soln = pmx.optimize(start=map_soln, vars=[sigma_rot, f, prot, log_Q0, log_dQ])
         map_soln = pmx.optimize(start=map_soln, vars=[t0, a, b, period, mean, r_pl])
         map_soln = pmx.optimize(start=map_soln)
