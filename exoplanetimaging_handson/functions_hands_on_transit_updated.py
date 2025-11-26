@@ -21,7 +21,7 @@ import arviz as az
 def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot=200, mask=None, start=None):
     import pymc as pm
     import pymc_ext as pmx
-    import pytensor.tensor as tt
+    from pytensor import tensor as tt
     import exoplanet as xo
     from celerite2.pymc import terms, GaussianProcess
     import numpy as np
