@@ -81,6 +81,9 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         gp = GaussianProcess(kernel, t=x[mask], diag=yerr[mask] ** 2, mean=transit_model, quiet=True)
         gp.marginal("transit_obs", observed=y[mask])
 
+        # Compute the GP model prediction for plotting purposes
+        pm.Deterministic("gp_pred", gp.predict(y[mask] - transit_model))
+
         # Optimize MAP
         if start is None:
             start = model.initial_point()
