@@ -58,9 +58,10 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         depth = pm.Deterministic("depth", tt.exp(log_depth))
         ror = pm.Deterministic("ror", star.get_ror_from_approx_transit_depth(depth, b))
         r_pl = pm.Deterministic("r_pl", ror * r_star)
-        ecs = pmx.UnitDisk("ecs", testval=np.array([0.01, 0.0]))
-        ecc = pm.Deterministic("ecc", tt.sum(ecs**2))
-        omega = pm.Deterministic("omega", tt.arctan2(ecs[1], ecs[0]))
+        # ecs = pmx.UnitDisk("ecs", testval=np.array([0.01, 0.0]))
+        # ecc = pm.Deterministic("ecc", tt.sum(ecs**2))
+        # omega = pm.Deterministic("omega", tt.arctan2(ecs[1], ecs[0]))
+        ecc, omega = xo.eccentricity.kipping13("ecc", "omega")
 
         # Orbit and transit
         orbit = xo.orbits.KeplerianOrbit(
