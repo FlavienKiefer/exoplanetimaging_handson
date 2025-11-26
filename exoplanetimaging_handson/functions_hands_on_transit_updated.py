@@ -94,7 +94,25 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         # map_soln = pmx.optimize(start=map_soln, vars=[t0, a, b, period, mean, r_pl])
         # map_soln = pmx.optimize(start=map_soln, vars=[sigma_rot, f, prot, log_Q0, log_dQ])
         # map_soln = pmx.optimize(start=map_soln, vars=[t0, a, b, period, mean, r_pl])
-        map_soln = pmx.optimize(start=map_soln, vars=[t0, a, b, period, mean, r_pl,sigma_rot, f, prot, log_Q0, log_dQ])
+        
+        map_soln = pmx.optimize(
+            start=start, vars=[log_sigma_lc, log_sigma_gp, log_rho_gp]
+        )
+        map_soln = pmx.optimize(start=map_soln, vars=[log_depth])
+        map_soln = pmx.optimize(start=map_soln, vars=[b])
+        map_soln = pmx.optimize(start=map_soln, vars=[log_period, t0])
+        map_soln = pmx.optimize(start=map_soln, vars=[u_star])
+        map_soln = pmx.optimize(start=map_soln, vars=[log_depth])
+        map_soln = pmx.optimize(start=map_soln, vars=[b])
+        map_soln = pmx.optimize(start=map_soln, vars=[ecs])
+        map_soln = pmx.optimize(start=map_soln, vars=[mean])
+        map_soln = pmx.optimize(
+            start=map_soln, vars=[log_sigma_lc, log_sigma_gp, log_rho_gp]
+        )
+        map_soln = pmx.optimize(start=map_soln)
+
+        
+        # map_soln = pmx.optimize(start=map_soln, vars=[t0, a, b, period, mean, r_pl,sigma_rot, f, prot, log_Q0, log_dQ])
 
     return model, map_soln
 
