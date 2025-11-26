@@ -82,7 +82,7 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         log_sigma_lc = pm.Normal(
             "log_sigma_lc", mu=np.log(np.std(y[mask])), sigma=10
         )
-        log_rho_gp = pm.Normal("log_rho_gp", mu=0, sd=10)
+        log_rho_gp = pm.Normal("log_rho_gp", mu=0, sigma=10)
         log_sigma_gp = pm.Normal(
             "log_sigma_gp", mu=np.log(np.std(y[mask])), sigma=10
         )
