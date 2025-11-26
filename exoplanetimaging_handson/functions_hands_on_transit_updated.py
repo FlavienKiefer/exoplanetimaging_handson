@@ -78,8 +78,8 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
 
         # GP with transit as mean
         kernel = terms.RotationTerm(sigma=sigma_rot, period=prot, Q0=tt.exp(log_Q0), dQ=tt.exp(log_dQ), f=f)
-        gp = GaussianProcess(kernel, t=x[mask], diag=yerr[mask] ** 2, mean=transit_model*0, quiet=True)
-        gp.marginal("transit_obs", observed=y[mask]-transit_model)
+        gp = GaussianProcess(kernel, t=x[mask], diag=yerr[mask] ** 2, mean=transit_model, quiet=True)
+        gp.marginal("transit_obs", observed=y[mask])
 
         # Compute the GP model prediction for plotting purposes
         pm.Deterministic("gp_pred", gp.predict(y[mask] - transit_model))
