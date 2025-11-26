@@ -43,10 +43,9 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         # Stellar parameters
         logg_star = pm.Normal("logg_star", mu=4.45, sigma=0.05)
         r_star = pm.Normal("r_star", mu=1.004, sigma=0.018)
-        u_star = xo.QuadLimbDark("u_star")
 
         # Limb-darkening
-        u = xo.distributions.QuadLimbDark("u_star", testval=u_s)
+        u_star = xo.distributions.QuadLimbDark("u_star", testval=u_s)
         star = xo.LimbDarkLightCurve(u_s)
 
         # Planet parameters
@@ -59,10 +58,10 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
         depth = pm.Deterministic("depth", tt.exp(log_depth))
         ror = pm.Deterministic("ror", star.get_ror_from_approx_transit_depth(depth, b))
         r_pl = pm.Deterministic("r_pl", ror * r_star)
-        ecs = pmx.UnitDisk("ecs", testval=np.array([0.01, 0.0]))
-        ecc = pm.Deterministic("ecc", tt.sum(ecs**2))
-        omega = pm.Deterministic("omega", tt.arctan2(ecs[1], ecs[0]))
-        xo.eccentricity.kipping13("ecc_prior", fixed=True, observed=ecc)
+        # ecs = pmx.UnitDisk("ecs", testval=np.array([0.01, 0.0]))
+        # ecc = pm.Deterministic("ecc", tt.sum(ecs**2))
+        # omega = pm.Deterministic("omega", tt.arctan2(ecs[1], ecs[0]))
+        ecc, omega = xo.eccentricity.kipping13("ecc", "omega")
 
         # Orbit and transit
         orbit = xo.orbits.KeplerianOrbit(
