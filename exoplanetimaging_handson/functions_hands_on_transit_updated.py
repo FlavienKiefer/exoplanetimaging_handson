@@ -161,8 +161,8 @@ def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot
 
         extras = dict(
             zip(
-                ["light_curves", "gp_pred"],
-                pmx.eval_in_model([light_curves, gp.predict(resid)], map_soln),
+                ["transit_model", "gp_pred"],
+                pmx.eval_in_model([transit_model, gp.predict(resid)], map_soln),
             )
         )
 
