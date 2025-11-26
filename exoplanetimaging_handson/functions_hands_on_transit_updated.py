@@ -16,148 +16,78 @@ import matplotlib as mpl
 import platform
 import arviz as az
 
-def build_model(x,y,yerr,u_s,t0s,periods,rps,a_ps, texp,b_ps=0.62, P_rot=200, mask=None, start=None):
+def build_model(x, y, yerr, u_s, t0s, periods, rps, a_ps, texp, b_ps=0.62, P_rot=200, mask=None, start=None):
+    import pymc as pm
+    import pymc_ext as pmx
+    import pytensor.tensor as tt
+    import exoplanet as xo
+    from celerite2.pymc import terms, GaussianProcess
+    import numpy as np
+
     nb_planet = 1
     planets_str = "b"
     t0s = np.array([t0s])
     periods = np.array([periods])
     rps = np.array([rps])
     a_ps = np.array([a_ps])
-    #rors = rps
 
     if mask is None:
         mask = np.ones(len(x), dtype=bool)
 
     with pm.Model() as model:
-
         # Shared parameters
         mean = pm.Normal("mean", mu=0.0, sigma=1.0)
 
-        # Stellar parameters.  These are usually determined from spectroscopy
-        # and/or isochrone fits.
+        # Stellar parameters
         logg_star = pm.Normal("logg_star", mu=4.45, sigma=0.05)
         r_star = pm.Normal("r_star", mu=1.004, sigma=0.018)
 
-        # Limb-darkening: adopt Kipping 2013.
-        #u_star = xo.distributions.QuadLimbDark("u_star", testval=u_s)
+        # Limb-darkening
         u = xo.distributions.QuadLimbDark("u_star", testval=u_s)
         star = xo.LimbDarkLightCurve(u_s)
 
-        # Orbital parameters for the planet.  Use mean values from Holczer+16.
-        a = pm.Uniform("a", lower=a_ps-1,upper=a_ps+1, shape=nb_planet)
-        b = pm.Uniform("b", lower=b_ps-0.1,upper=b_ps+0.1, shape=nb_planet)
-       # b = xo.distributions.ImpactParameter("b", ror=rors, shape=nb_planet, testval=b_ps)
+        # Planet parameters
+        a = pm.Uniform("a", lower=a_ps-1, upper=a_ps+1, shape=nb_planet)
+        b = pm.Uniform("b", lower=b_ps-0.1, upper=b_ps+0.1, shape=nb_planet)
         t0 = pm.Normal("t0", mu=t0s, sigma=0.005, shape=nb_planet)
         logP = pm.Normal("logP", mu=np.log(periods), sigma=0.05, shape=nb_planet)
         period = pm.Deterministic("period", pm.math.exp(logP))
-        log_depth = pm.Normal("log_depth", mu=np.log(rps**2), sigma=1.5,shape=nb_planet)
+        log_depth = pm.Normal("log_depth", mu=np.log(rps**2), sigma=1.5, shape=nb_planet)
         depth = pm.Deterministic("depth", tt.exp(log_depth))
-        ror = pm.Deterministic(
-            "ror",
-            star.get_ror_from_approx_transit_depth(depth, b),
-        )
+        ror = pm.Deterministic("ror", star.get_ror_from_approx_transit_depth(depth, b))
         r_pl = pm.Deterministic("r_pl", ror * r_star)
 
+        # Orbit and transit
+        orbit = xo.orbits.KeplerianOrbit(period=period, t0=t0, a=a, b=b)
+        transit_model = mean + tt.sum(star.get_light_curve(orbit=orbit, r=r_pl, t=x[mask], texp=texp), axis=-1)
+        pm.Deterministic("transit_pred", star.get_light_curve(orbit=orbit, r=r_pl, t=x[mask], texp=texp))
 
-        # Define the orbit model.
-        orbit = xo.orbits.KeplerianOrbit(
-            period=period,
-            t0=t0,
-            a=a,
-            b=b,
-        )
-
-        transit_model = mean + tt.sum(
-            star.get_light_curve(orbit=orbit, r=r_pl, t=x[mask], texp=texp),
-            axis=-1,
-        )
-
-        # Convenience function for plotting.
-        pm.Deterministic(
-            "transit_pred",
-            star.get_light_curve(orbit=orbit, r=r_pl, t=x[mask], texp=texp),
-        )
-
-        # Use the GP model from the stellar variability tutorial at
-        # https://gallery.exoplanet.codes/en/latest/tutorials/stellar-variability/
-
-        # A jitter term describing excess white noise
+        # Jitter
         log_jitter = pm.Normal("log_jitter", mu=np.log(np.mean(yerr)), sigma=2)
 
-        # The parameters of the RotationTerm kernel
-        # sigma_rot = pm.InverseGamma(
-        #     "sigma_rot", **pmx.estimate_inverse_gamma_parameters(1, 5)
-        # )
-        # PyMC 5-compatible version
-        # Compute alpha, beta manually for mean=1, std=5
-        mean_val = 1
-        std_val = 5
-        alpha = (mean_val/std_val)**2 + 2
+        # Rotation GP parameters
+        mean_val, std_val = 1, 5
+        alpha = (mean_val / std_val)**2 + 2
         beta = mean_val * (alpha - 1)
         sigma_rot = pm.InverseGamma("sigma_rot", alpha=alpha, beta=beta)
-        
-        # Rotation period is 200 days, from Lomb Scargle
         log_prot = pm.Normal("log_prot", mu=np.log(P_rot), sigma=0.02)
         prot = pm.Deterministic("prot", tt.exp(log_prot))
         log_Q0 = pm.Normal("log_Q0", mu=0, sigma=2)
         log_dQ = pm.Normal("log_dQ", mu=0, sigma=2)
         f = pm.Uniform("f", lower=0.01, upper=1)
 
-        # Set up the Gaussian Process model. See
-        # https://celerite2.readthedocs.io/en/latest/tutorials/first/ for an
-        # introduction. Here, we have a quasiperiodic term:
-        kernel = terms.RotationTerm(
-            sigma=sigma_rot,
-            period=prot,
-            Q0=tt.exp(log_Q0),
-            dQ=tt.exp(log_dQ),
-            f=f,
-        )
-        #
-        # Note mean of the GP is defined here to be zero, so our "observations"
-        # will need to subtract the transit model.  The inverse choice could
-        # also be made.
-        #
-        gp = GaussianProcess(
-            kernel,
-            t=x[mask],
-            diag=yerr[mask] ** 2 + tt.exp(2 * np.log(np.mean(yerr))),
-            quiet=True,
-        )
+        # GP with transit as mean
+        kernel = terms.RotationTerm(sigma=sigma_rot, period=prot, Q0=tt.exp(log_Q0), dQ=tt.exp(log_dQ), f=f)
+        gp = GaussianProcess(kernel, t=x[mask], diag=yerr[mask] ** 2, mean=transit_model, quiet=True)
+        gp.marginal("transit_obs", observed=y[mask])
 
-        # Compute the Gaussian Process likelihood and add it into the
-        # the PyMC3 model as a "potential"
-        gp.marginal("transit_obs", observed=y[mask] - transit_model)
-
-        # Compute the GP model prediction for plotting purposes
-        pm.Deterministic("gp_pred", gp.predict(y[mask] - transit_model))
-
-        # Track planet radius in Jovian radii
-       # r_planet = pm.Deterministic(
-       #     "r_planet",
-       #     (ror * r_star) * (1 * units.Rsun / (1 * units.Rjup)).cgs.value,
-       # )
-#
-        # Optimize the MAP solution.
+        # Optimize MAP
         if start is None:
             start = model.test_point
 
         map_soln = start
-
-        map_soln = pmx.optimize(
-            start=map_soln, vars=[sigma_rot, f, prot, log_Q0, log_dQ]
-        )
-        map_soln = pmx.optimize(
-            start=map_soln,
-            vars=[
-                t0,
-                a,
-                b,
-                period,
-                mean,
-                r_pl,
-            ],
-        )
+        map_soln = pmx.optimize(start=map_soln, vars=[sigma_rot, f, prot, log_Q0, log_dQ])
+        map_soln = pmx.optimize(start=map_soln, vars=[t0, a, b, period, mean, r_pl])
         map_soln = pmx.optimize(start=map_soln)
 
     return model, map_soln
